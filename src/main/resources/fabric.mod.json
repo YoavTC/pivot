@@ -13,7 +13,7 @@
 	"license": "MIT",
 	"icon": "assets/pivot/icon.png",
 	"environment": "*",
-	"classTweaker": "pivot.classtweaker",
+	"accessWidener": "pivot.classtweaker",
 	"entrypoints": {
 		"main": [
 			"bikerboys.pivot.Pivot"
