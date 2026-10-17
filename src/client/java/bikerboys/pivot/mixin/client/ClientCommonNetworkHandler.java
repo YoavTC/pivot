@@ -19,7 +19,7 @@ public class ClientCommonNetworkHandler {
 
         if (instance != null) {
             if (instance.player != null) {
-                ClientLevel clientWorld = instance.player.clientLevel;
+                ClientLevel clientWorld = instance.level;
                 if (clientWorld != null) {
                     clientWorld.entitiesForRendering().forEach((entity -> {
                         if (entity instanceof Display displayEntity) {

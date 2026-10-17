@@ -1,12 +1,14 @@
 package bikerboys.pivot.networking;
 
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.server.permissions.Permissions;
 import bikerboys.pivot.networking.packets.*;
 import bikerboys.pivot.util.Util;
 import com.mojang.math.Transformation;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
@@ -59,7 +61,7 @@ public class Listener {
                         return;
                     }
                     if (!Util.getUuidFromDisplayEntity(blockDisplayEntity).equals(context.player().getStringUUID()) && !Util.getUuidFromDisplayEntity(blockDisplayEntity).isEmpty()) {
-                        if (!context.player().hasPermissions(2)) {
+                        if (!context.player().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
                             return;
                         }
                     }
@@ -67,10 +69,10 @@ public class Listener {
                     Transformation transformation = Display.createTransformation(blockDisplayEntity.getEntityData());
 
                     // Example: reading parts of the transformation
-                    Vector3f translation = transformation.getTranslation();
-                    Quaternionf leftRot = transformation.getLeftRotation();
-                    Vector3f scale = transformation.getScale();
-                    Quaternionf rightRot = transformation.getRightRotation();
+                    Vector3f translation = new Vector3f(transformation.translation());
+                    Quaternionf leftRot = new Quaternionf(transformation.leftRotation());
+                    Vector3f scale = new Vector3f(transformation.scale());
+                    Quaternionf rightRot = new Quaternionf(transformation.rightRotation());
 
 
                     if (right_rotation != null) {
@@ -110,7 +112,7 @@ public class Listener {
                     return;
                 }
                 if (!Util.getUuidFromDisplayEntity(blockDisplayEntity).equals(context.player().getStringUUID()) && !Util.getUuidFromDisplayEntity(blockDisplayEntity).isEmpty()) {
-                    if (!context.player().hasPermissions(2)) {
+                    if (!context.player().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
                         return;
                     }
                 }
@@ -143,7 +145,7 @@ public class Listener {
 
             if (item instanceof BlockItem item1) {
                 Block block = item1.getBlock();
-                Display.BlockDisplay blockDisplayEntity = new Display.BlockDisplay(EntityType.BLOCK_DISPLAY, context.player().level());
+                Display.BlockDisplay blockDisplayEntity = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, context.player().level());
 
                 blockDisplayEntity.setBlockState(block.defaultBlockState());
                 blockDisplayEntity.setPosRaw(player.getX(), player.getY(), player.getZ());
@@ -164,7 +166,7 @@ public class Listener {
             }
 
             if (item == Items.FLINT_AND_STEEL) {
-                Display.BlockDisplay blockDisplayEntity = new Display.BlockDisplay(EntityType.BLOCK_DISPLAY, context.player().level());
+                Display.BlockDisplay blockDisplayEntity = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, context.player().level());
 
                 if (player.gameMode().isSurvival()) {
                     player.getMainHandItem().hurtWithoutBreaking(1, player);
@@ -197,7 +199,7 @@ public class Listener {
 
 
 
-            Display.ItemDisplay itemDisplayEntity = new Display.ItemDisplay(EntityType.ITEM_DISPLAY, context.player().level());
+            Display.ItemDisplay itemDisplayEntity = new Display.ItemDisplay(EntityTypes.ITEM_DISPLAY, context.player().level());
 
 
 
@@ -233,7 +235,7 @@ public class Listener {
                 }
 
                 if (!Util.getUuidFromDisplayEntity(blockDisplayEntity).equals(context.player().getStringUUID()) && !Util.getUuidFromDisplayEntity(blockDisplayEntity).isEmpty()) {
-                    if (!context.player().hasPermissions(2)) {
+                    if (!context.player().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
                         return;
                     }
                 }
@@ -243,7 +245,7 @@ public class Listener {
                 if (Util.getOriginalBlockDisplayEntity(blockDisplayEntity).equalsIgnoreCase("")) {
                     blockState = blockDisplayEntity.getBlockState();
                 } else {
-                    Block blockfromid = BuiltInRegistries.BLOCK.getValue(ResourceLocation.parse(Util.getOriginalBlockDisplayEntity(blockDisplayEntity)));
+                    Block blockfromid = BuiltInRegistries.BLOCK.getValue(Identifier.parse(Util.getOriginalBlockDisplayEntity(blockDisplayEntity)));
 
                     if (blockfromid != Blocks.AIR) {
                         blockState = blockfromid.defaultBlockState();
@@ -269,7 +271,7 @@ public class Listener {
                 }
 
                 if (!Util.getUuidFromDisplayEntity(itemDisplayEntity).equals(context.player().getStringUUID()) && !Util.getUuidFromDisplayEntity(itemDisplayEntity).isEmpty()) {
-                    if (!context.player().hasPermissions(2)) {
+                    if (!context.player().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
                         return;
                     }
                 }
@@ -301,7 +303,7 @@ public class Listener {
                     return;
                 }
                 if (!Util.getUuidFromDisplayEntity(blockDisplayEntity).equals(context.player().getStringUUID()) && !Util.getUuidFromDisplayEntity(blockDisplayEntity).isEmpty()) {
-                    if (!context.player().hasPermissions(2)) {
+                    if (!context.player().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
                         return;
                     }
                 }
@@ -324,7 +326,7 @@ public class Listener {
                     return;
                 }
                 if (!Util.getUuidFromDisplayEntity(blockDisplayEntity).equals(context.player().getStringUUID()) && !Util.getUuidFromDisplayEntity(blockDisplayEntity).isEmpty()) {
-                    if (!context.player().hasPermissions(2)) {
+                    if (!context.player().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
                         return;
                     }
                 }
@@ -335,7 +337,7 @@ public class Listener {
 
 
                 if (item == mainHandStack.getItem() || blockDisplayEntity.getBlockState().is(Blocks.FIRE) || blockDisplayEntity.getBlockState().is(Blocks.SOUL_FIRE)) {
-                    Display.BlockDisplay duplicate = new Display.BlockDisplay(EntityType.BLOCK_DISPLAY, player.level());
+                    Display.BlockDisplay duplicate = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, player.level());
 
                     Transformation transformation = Display.createTransformation(blockDisplayEntity.getEntityData());
 
@@ -352,7 +354,7 @@ public class Listener {
                     Util.setUuidDisplayEntity(duplicate, context.player());
 
                 } else {
-                    player.displayClientMessage(Component.literal("You are not holding the block that you are trying to duplicate!"), true);
+                    player.sendOverlayMessage(Component.literal("You are not holding the block that you are trying to duplicate!"));
                 }
 
             } else if (entity instanceof Display.ItemDisplay itemDisplayEntity) {
@@ -360,7 +362,7 @@ public class Listener {
                     return;
                 }
                 if (!Util.getUuidFromDisplayEntity(itemDisplayEntity).equals(context.player().getStringUUID()) && !Util.getUuidFromDisplayEntity(itemDisplayEntity).isEmpty()) {
-                    if (!context.player().hasPermissions(2)) {
+                    if (!context.player().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
                         return;
                     }
                 }
@@ -368,7 +370,7 @@ public class Listener {
                 Item item = itemDisplayEntity.getItemStack().getItem();
 
                 if (item == mainHandStack.getItem()) {
-                    Display.ItemDisplay duplicate = new Display.ItemDisplay(EntityType.ITEM_DISPLAY, player.level());
+                    Display.ItemDisplay duplicate = new Display.ItemDisplay(EntityTypes.ITEM_DISPLAY, player.level());
 
                     Transformation transformation = Display.createTransformation(itemDisplayEntity.getEntityData());
 
@@ -387,7 +389,7 @@ public class Listener {
                     Util.setUuidDisplayEntity(duplicate, context.player());
 
                 } else {
-                    player.displayClientMessage(Component.literal("You are not holding the item that you are trying to duplicate!"), true);
+                    player.sendOverlayMessage(Component.literal("You are not holding the item that you are trying to duplicate!"));
                 }
 
             }
@@ -407,7 +409,7 @@ public class Listener {
                 if (!Util.getUuidFromDisplayEntity(blockDisplayEntity).equals(context.player().getStringUUID()) && !Util.getUuidFromDisplayEntity(blockDisplayEntity).isEmpty()) {
 
 
-                    if (!context.player().hasPermissions(2)) {
+                    if (!context.player().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
                         return;
                     }
 
@@ -447,7 +449,7 @@ public class Listener {
                         return;
                     }
                     if (!Util.getUuidFromDisplayEntity(blockDisplay).equals(context.player().getStringUUID()) && !Util.getUuidFromDisplayEntity(blockDisplay).isEmpty()) {
-                        if (!context.player().hasPermissions(2)) {
+                        if (!context.player().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
                             return;
                         }
                     }
@@ -484,7 +486,7 @@ public class Listener {
                         return;
                     }
                     if (!Util.getUuidFromDisplayEntity(displayEntity).equals(context.player().getStringUUID()) && !Util.getUuidFromDisplayEntity(displayEntity).isEmpty()) {
-                        if (!context.player().hasPermissions(2)) {
+                        if (!context.player().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
                             return;
                         }
                     }
@@ -492,7 +494,7 @@ public class Listener {
 
                     Block block = displayEntity.getBlockState().getBlock();
 
-                    ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
+                    Identifier id = BuiltInRegistries.BLOCK.getKey(block);
 
                     if (Util.getOriginalBlockDisplayEntity(displayEntity).equalsIgnoreCase("")) {
                         Util.setOriginalBlockDisplayEntity(displayEntity, id.toString());
@@ -534,7 +536,7 @@ public class Listener {
 
                                 displayEntity.setBlockState(Blocks.STICKY_PISTON.defaultBlockState());
                             } else {
-                                context.player().displayClientMessage(Component.literal("You currently dont have a slime ball in your inventory!"), true);
+                                context.player().sendOverlayMessage(Component.literal("You currently dont have a slime ball in your inventory!"));
                             }
 
                         }
@@ -603,7 +605,7 @@ public class Listener {
                                 return;
                             }
                             if (!Util.getUuidFromDisplayEntity(itemDisplay).equals(context.player().getStringUUID()) && !Util.getUuidFromDisplayEntity(itemDisplay).isEmpty()) {
-                                if (!context.player().hasPermissions(2)) {
+                                if (!context.player().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
                                     return;
                                 }
                             }

@@ -6,13 +6,13 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public record SetItemDisplayContextPacket(
         String uuid,
         String context
 ) implements CustomPacketPayload {
-    public static final ResourceLocation UPDATE_BLOCK_DISPLAY_ID = ResourceLocation.fromNamespaceAndPath(MOD_ID, "set_item_display_context");
+    public static final Identifier UPDATE_BLOCK_DISPLAY_ID = Identifier.fromNamespaceAndPath(MOD_ID, "set_item_display_context");
     public static final Type<SetItemDisplayContextPacket> ID = new Type<>(UPDATE_BLOCK_DISPLAY_ID);
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SetItemDisplayContextPacket> CODEC =

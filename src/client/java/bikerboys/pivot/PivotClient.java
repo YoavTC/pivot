@@ -1,20 +1,21 @@
 package bikerboys.pivot;
 
+import net.minecraft.server.permissions.Permissions;
 import bikerboys.pivot.attachmenttype.UUIDCustomAttachedData;
 import bikerboys.pivot.networking.packets.SetSelectedBlockDisplayEntityS2C;
 import bikerboys.pivot.screen.BlockDisplayEntityEditScreen;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,11 +39,10 @@ public class PivotClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(Scheduler::tick);
 
-		keyBinding = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+		keyBinding = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 				"key.pivot.openeditscreen", // The translation key of the keybinding's name
-				InputConstants.Type.KEYSYM, // The type of the keybinding, KEYSYM for keyboard, MOUSE for mouse.
-				GLFW.GLFW_KEY_R, // The keycode of the key
-				"category.pivot.pivot" // The translation key of the keybinding's category.
+				InputConstants.KEY_R, // The keycode of the key
+				KeyMapping.Category.register(Identifier.fromNamespaceAndPath("pivot", "pivot")) // The category the keybinding is listed under.
 		));
 
 
@@ -96,7 +96,7 @@ public class PivotClient implements ClientModInitializer {
 			BlockDisplayEntityEditScreen blockDisplayEntityEditScreen = new BlockDisplayEntityEditScreen();
 			currentscreen = blockDisplayEntityEditScreen;
 
-			minecraftClient.setScreen(blockDisplayEntityEditScreen);
+			minecraftClient.setScreenAndShow(blockDisplayEntityEditScreen);
 		}
 
 		if (minecraftClient.player != null) {
@@ -104,7 +104,7 @@ public class PivotClient implements ClientModInitializer {
 			// Clear list first (or just re-create a new one)
 			DisplayEntitiesInWorld.clear();
 
-			minecraftClient.player.clientLevel.entitiesForRendering().forEach((entity -> {
+			minecraftClient.level.entitiesForRendering().forEach((entity -> {
 				if (entity instanceof Display blockDisplayEntity) {
 					if (minecraftClient.player.distanceTo(blockDisplayEntity) <= 150) {
 
@@ -115,7 +115,7 @@ public class PivotClient implements ClientModInitializer {
 
 						if (attachedOrCreate.uuid().equals(minecraftClient.player.getStringUUID()) || attachedOrCreate.uuid().equals("")) {
 							DisplayEntitiesInWorld.add(blockDisplayEntity.getUUID());
-						} else if (Minecraft.getInstance().player.hasPermissions(2)) {
+						} else if (Minecraft.getInstance().player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
 							DisplayEntitiesInWorld.add(blockDisplayEntity.getUUID());
 						}
 					}
@@ -137,7 +137,7 @@ public class PivotClient implements ClientModInitializer {
 		LocalPlayer player = Minecraft.getInstance().player;
 
 		if (player != null) {
-			ClientLevel world = player.clientLevel;
+			ClientLevel world = Minecraft.getInstance().level;
 			if (world != null) {
 				Entity entity = world.getEntity(uuid);
 

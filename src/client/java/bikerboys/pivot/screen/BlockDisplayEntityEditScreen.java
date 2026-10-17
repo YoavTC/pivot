@@ -9,13 +9,12 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.math.Transformation;
 import io.wispforest.owo.ui.base.BaseOwoScreen;
 import io.wispforest.owo.ui.component.*;
-import io.wispforest.owo.ui.container.Containers;
+import io.wispforest.owo.ui.container.UIContainers;
 import io.wispforest.owo.ui.container.FlowLayout;
 import io.wispforest.owo.ui.container.ScrollContainer;
 import io.wispforest.owo.ui.core.*;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -40,48 +39,48 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
     private boolean suppressUpdates = false;
     private Display displayEntity;
 
-    private ScrollContainer<Component> blockStateScroll = null;
+    private ScrollContainer<UIComponent> blockStateScroll = null;
     private FlowLayout blockStateFlow = null;
 
     // Euler sliders
-    private final DiscreteSliderComponent rotXSlider = Components.discreteSlider(Sizing.fixed(140), -180f, 180f).decimalPlaces(2);
-    private final DiscreteSliderComponent rotYSlider = Components.discreteSlider(Sizing.fixed(140), -180f, 180f).decimalPlaces(2);
-    private final DiscreteSliderComponent rotZSlider = Components.discreteSlider(Sizing.fixed(140), -180f, 180f).decimalPlaces(2);
+    private final DiscreteSliderComponent rotXSlider = UIComponents.discreteSlider(Sizing.fixed(140), -180f, 180f).decimalPlaces(2);
+    private final DiscreteSliderComponent rotYSlider = UIComponents.discreteSlider(Sizing.fixed(140), -180f, 180f).decimalPlaces(2);
+    private final DiscreteSliderComponent rotZSlider = UIComponents.discreteSlider(Sizing.fixed(140), -180f, 180f).decimalPlaces(2);
 
-    private final DiscreteSliderComponent scaleXSlider = Components.discreteSlider(Sizing.fixed(140), 0f, 10f).decimalPlaces(2);
-    private final DiscreteSliderComponent scaleYSlider = Components.discreteSlider(Sizing.fixed(140), 0f, 10f).decimalPlaces(2);
-    private final DiscreteSliderComponent scaleZSlider = Components.discreteSlider(Sizing.fixed(140), 0f, 10f).decimalPlaces(2);
+    private final DiscreteSliderComponent scaleXSlider = UIComponents.discreteSlider(Sizing.fixed(140), 0f, 10f).decimalPlaces(2);
+    private final DiscreteSliderComponent scaleYSlider = UIComponents.discreteSlider(Sizing.fixed(140), 0f, 10f).decimalPlaces(2);
+    private final DiscreteSliderComponent scaleZSlider = UIComponents.discreteSlider(Sizing.fixed(140), 0f, 10f).decimalPlaces(2);
 
-    private final TextBoxComponent positionXbox = Components.textBox(Sizing.fixed(140));
-    private final TextBoxComponent positionYbox = Components.textBox(Sizing.fixed(140));
-    private final TextBoxComponent positionZbox = Components.textBox(Sizing.fixed(140));
+    private final TextBoxComponent positionXbox = UIComponents.textBox(Sizing.fixed(140));
+    private final TextBoxComponent positionYbox = UIComponents.textBox(Sizing.fixed(140));
+    private final TextBoxComponent positionZbox = UIComponents.textBox(Sizing.fixed(140));
 
-    private final ButtonComponent zeroX = Components.button(net.minecraft.network.chat.Component.literal("0"), (press -> rotXSlider.setFromDiscreteValue(0)));
-    private final ButtonComponent zeroY = Components.button(net.minecraft.network.chat.Component.literal("0"), (press -> rotYSlider.setFromDiscreteValue(0)));
-    private final ButtonComponent zeroZ = Components.button(net.minecraft.network.chat.Component.literal("0"), (press -> rotZSlider.setFromDiscreteValue(0)));
+    private final ButtonComponent zeroX = UIComponents.button(net.minecraft.network.chat.Component.literal("0"), (press -> rotXSlider.setFromDiscreteValue(0)));
+    private final ButtonComponent zeroY = UIComponents.button(net.minecraft.network.chat.Component.literal("0"), (press -> rotYSlider.setFromDiscreteValue(0)));
+    private final ButtonComponent zeroZ = UIComponents.button(net.minecraft.network.chat.Component.literal("0"), (press -> rotZSlider.setFromDiscreteValue(0)));
 
-    private final DiscreteSliderComponent transXSlider = Components.discreteSlider(Sizing.fixed(140), -2.0, 2.0).decimalPlaces(2);
-    private final DiscreteSliderComponent transYSlider = Components.discreteSlider(Sizing.fixed(140), -2.0, 2.0).decimalPlaces(2);
-    private final DiscreteSliderComponent transZSlider = Components.discreteSlider(Sizing.fixed(140), -2.0, 2.0).decimalPlaces(2);
+    private final DiscreteSliderComponent transXSlider = UIComponents.discreteSlider(Sizing.fixed(140), -2.0, 2.0).decimalPlaces(2);
+    private final DiscreteSliderComponent transYSlider = UIComponents.discreteSlider(Sizing.fixed(140), -2.0, 2.0).decimalPlaces(2);
+    private final DiscreteSliderComponent transZSlider = UIComponents.discreteSlider(Sizing.fixed(140), -2.0, 2.0).decimalPlaces(2);
 
 
 
-    ButtonComponent tZeroX = Components.button(net.minecraft.network.chat.Component.literal("0"), press -> transXSlider.setFromDiscreteValue(0.0));
-    ButtonComponent tZeroY = Components.button(net.minecraft.network.chat.Component.literal("0"), press -> transYSlider.setFromDiscreteValue(0.0));
-    ButtonComponent tZeroZ = Components.button(net.minecraft.network.chat.Component.literal("0"), press -> transZSlider.setFromDiscreteValue(0.0));
+    ButtonComponent tZeroX = UIComponents.button(net.minecraft.network.chat.Component.literal("0"), press -> transXSlider.setFromDiscreteValue(0.0));
+    ButtonComponent tZeroY = UIComponents.button(net.minecraft.network.chat.Component.literal("0"), press -> transYSlider.setFromDiscreteValue(0.0));
+    ButtonComponent tZeroZ = UIComponents.button(net.minecraft.network.chat.Component.literal("0"), press -> transZSlider.setFromDiscreteValue(0.0));
 
     // Navigation
-    private final ButtonComponent nextEntity = Components.button(net.minecraft.network.chat.Component.literal("Next"), btn -> switchEntity(1));
-    private final ButtonComponent previousEntity = Components.button(net.minecraft.network.chat.Component.literal("Previous"), btn -> switchEntity(-1));
-    private final ButtonComponent closestEntity = Components.button(net.minecraft.network.chat.Component.literal("Closest"), btn -> selectClosest());
+    private final ButtonComponent nextEntity = UIComponents.button(net.minecraft.network.chat.Component.literal("Next"), btn -> switchEntity(1));
+    private final ButtonComponent previousEntity = UIComponents.button(net.minecraft.network.chat.Component.literal("Previous"), btn -> switchEntity(-1));
+    private final ButtonComponent closestEntity = UIComponents.button(net.minecraft.network.chat.Component.literal("Closest"), btn -> selectClosest());
 
 
 
     // Buttons
-    private final ButtonComponent advancedModeButton = Components.button(net.minecraft.network.chat.Component.literal("Advanced Mode"), btn -> PivotClient.advancedmode = !PivotClient.advancedmode);
-    private final ButtonComponent toggleGlowButton = Components.button(net.minecraft.network.chat.Component.literal("Toggle Glowing"), btn -> PivotClient.glowing = !PivotClient.glowing);
+    private final ButtonComponent advancedModeButton = UIComponents.button(net.minecraft.network.chat.Component.literal("Advanced Mode"), btn -> PivotClient.advancedmode = !PivotClient.advancedmode);
+    private final ButtonComponent toggleGlowButton = UIComponents.button(net.minecraft.network.chat.Component.literal("Toggle Glowing"), btn -> PivotClient.glowing = !PivotClient.glowing);
 
-    private final ButtonComponent lockButton = Components.button(net.minecraft.network.chat.Component.literal(""), press -> toggleLockDisplayEntity());
+    private final ButtonComponent lockButton = UIComponents.button(net.minecraft.network.chat.Component.literal(""), press -> toggleLockDisplayEntity());
 
     public BlockDisplayEntityEditScreen() {
         super(net.minecraft.network.chat.Component.literal(""));
@@ -92,14 +91,14 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
 
 
     protected @NotNull OwoUIAdapter<FlowLayout> createAdapter() {
-        return OwoUIAdapter.create(this, Containers::verticalFlow);
+        return OwoUIAdapter.create(this, UIContainers::verticalFlow);
     }
 
 
     @Override
     protected void build(FlowLayout root) {
         // --- Next / Previous (top-right) ---
-        FlowLayout buttons = Containers.verticalFlow(Sizing.content(), Sizing.content());
+        FlowLayout buttons = UIContainers.verticalFlow(Sizing.content(), Sizing.content());
         buttons.alignment(HorizontalAlignment.CENTER, VerticalAlignment.CENTER);
         buttons.positioning(Positioning.absolute(this.width - 125, 10));
         buttons.child(nextEntity.horizontalSizing(Sizing.fixed(110)));
@@ -107,16 +106,16 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
         buttons.child(closestEntity.horizontalSizing(Sizing.fixed(110)));
 
         // --- Rotation Sliders ---
-        FlowLayout rotationSliders = Containers.verticalFlow(Sizing.content(), Sizing.content());
+        FlowLayout rotationSliders = UIContainers.verticalFlow(Sizing.content(), Sizing.content());
         rotationSliders.alignment(HorizontalAlignment.LEFT, VerticalAlignment.TOP);
 
         Function<DiscreteSliderComponent, FlowLayout> rotationRow = (slider) -> {
-            FlowLayout row = Containers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
+            FlowLayout row = UIContainers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
             row.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
             row.child(slider.horizontalSizing(Sizing.fixed(140)));
-            row.child(Components.button(net.minecraft.network.chat.Component.literal("0"), btn -> slider.setFromDiscreteValue(0)).horizontalSizing(Sizing.fixed(20)));
-            row.child(Components.button(net.minecraft.network.chat.Component.literal("-45"), btn -> slider.setFromDiscreteValue(slider.discreteValue() - 45)));
-            row.child(Components.button(net.minecraft.network.chat.Component.literal("+45"), btn -> slider.setFromDiscreteValue(slider.discreteValue() + 45)));
+            row.child(UIComponents.button(net.minecraft.network.chat.Component.literal("0"), btn -> slider.setFromDiscreteValue(0)).horizontalSizing(Sizing.fixed(20)));
+            row.child(UIComponents.button(net.minecraft.network.chat.Component.literal("-45"), btn -> slider.setFromDiscreteValue(slider.discreteValue() - 45)));
+            row.child(UIComponents.button(net.minecraft.network.chat.Component.literal("+45"), btn -> slider.setFromDiscreteValue(slider.discreteValue() + 45)));
             return row;
         };
 
@@ -132,28 +131,28 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
         transYSlider.scrollStep(0.003);
         transZSlider.scrollStep(0.003);
 
-        rotationSliders.child(Containers.horizontalFlow(Sizing.content(), Sizing.fixed(24))
-                .child(Components.label(net.minecraft.network.chat.Component.literal("Rotation X")).horizontalSizing(Sizing.fixed(70)))
+        rotationSliders.child(UIContainers.horizontalFlow(Sizing.content(), Sizing.fixed(24))
+                .child(UIComponents.label(net.minecraft.network.chat.Component.literal("Rotation X")).horizontalSizing(Sizing.fixed(70)))
                 .child(rotationRow.apply(rotXSlider))
         );
-        rotationSliders.child(Containers.horizontalFlow(Sizing.content(), Sizing.fixed(24))
-                .child(Components.label(net.minecraft.network.chat.Component.literal("Rotation Y")).horizontalSizing(Sizing.fixed(70)))
+        rotationSliders.child(UIContainers.horizontalFlow(Sizing.content(), Sizing.fixed(24))
+                .child(UIComponents.label(net.minecraft.network.chat.Component.literal("Rotation Y")).horizontalSizing(Sizing.fixed(70)))
                 .child(rotationRow.apply(rotYSlider))
         );
-        rotationSliders.child(Containers.horizontalFlow(Sizing.content(), Sizing.fixed(24))
-                .child(Components.label(net.minecraft.network.chat.Component.literal("Rotation Z")).horizontalSizing(Sizing.fixed(70)))
+        rotationSliders.child(UIContainers.horizontalFlow(Sizing.content(), Sizing.fixed(24))
+                .child(UIComponents.label(net.minecraft.network.chat.Component.literal("Rotation Z")).horizontalSizing(Sizing.fixed(70)))
                 .child(rotationRow.apply(rotZSlider))
         );
 
         // --- Scale sliders ---
         BiFunction<String, DiscreteSliderComponent, FlowLayout> scaleRow = (label, slider) -> {
-            FlowLayout row = Containers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
+            FlowLayout row = UIContainers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
             row.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
-            row.child(Components.label(net.minecraft.network.chat.Component.literal(label)).horizontalSizing(Sizing.fixed(70)));
+            row.child(UIComponents.label(net.minecraft.network.chat.Component.literal(label)).horizontalSizing(Sizing.fixed(70)));
             row.child(slider.horizontalSizing(Sizing.fixed(140)));
-            row.child(Components.button(net.minecraft.network.chat.Component.literal("1"), btn -> slider.setFromDiscreteValue(1.0)).horizontalSizing(Sizing.fixed(20)));
-            row.child(Components.button(net.minecraft.network.chat.Component.literal("-0.5"), btn -> slider.setFromDiscreteValue(slider.discreteValue() - 0.5)));
-            row.child(Components.button(net.minecraft.network.chat.Component.literal("+0.5"), btn -> slider.setFromDiscreteValue(slider.discreteValue() + 0.5)));
+            row.child(UIComponents.button(net.minecraft.network.chat.Component.literal("1"), btn -> slider.setFromDiscreteValue(1.0)).horizontalSizing(Sizing.fixed(20)));
+            row.child(UIComponents.button(net.minecraft.network.chat.Component.literal("-0.5"), btn -> slider.setFromDiscreteValue(slider.discreteValue() - 0.5)));
+            row.child(UIComponents.button(net.minecraft.network.chat.Component.literal("+0.5"), btn -> slider.setFromDiscreteValue(slider.discreteValue() + 0.5)));
             return row;
         };
 
@@ -163,13 +162,13 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
 
         // --- Translation sliders ---
         BiFunction<String, DiscreteSliderComponent, FlowLayout> transRow = (label, slider) -> {
-            FlowLayout row = Containers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
+            FlowLayout row = UIContainers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
             row.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
-            row.child(Components.label(net.minecraft.network.chat.Component.literal(label)).horizontalSizing(Sizing.fixed(70)));
+            row.child(UIComponents.label(net.minecraft.network.chat.Component.literal(label)).horizontalSizing(Sizing.fixed(70)));
             row.child(slider.horizontalSizing(Sizing.fixed(140)));
-            row.child(Components.button(net.minecraft.network.chat.Component.literal("0"), btn -> slider.setFromDiscreteValue(0.0)).horizontalSizing(Sizing.fixed(20)));
-            row.child(Components.button(net.minecraft.network.chat.Component.literal("-0.05"), btn -> slider.setFromDiscreteValue(slider.discreteValue() - 0.05)));
-            row.child(Components.button(net.minecraft.network.chat.Component.literal("+0.05"), btn -> slider.setFromDiscreteValue(slider.discreteValue() + 0.05)));
+            row.child(UIComponents.button(net.minecraft.network.chat.Component.literal("0"), btn -> slider.setFromDiscreteValue(0.0)).horizontalSizing(Sizing.fixed(20)));
+            row.child(UIComponents.button(net.minecraft.network.chat.Component.literal("-0.05"), btn -> slider.setFromDiscreteValue(slider.discreteValue() - 0.05)));
+            row.child(UIComponents.button(net.minecraft.network.chat.Component.literal("+0.05"), btn -> slider.setFromDiscreteValue(slider.discreteValue() + 0.05)));
             return row;
         };
 
@@ -178,13 +177,13 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
         rotationSliders.child(transRow.apply("Translation Z", transZSlider));
 
         // --- Left column wrapper ---
-        FlowLayout leftColumn = Containers.verticalFlow(Sizing.content(), Sizing.content());
+        FlowLayout leftColumn = UIContainers.verticalFlow(Sizing.content(), Sizing.content());
         leftColumn.alignment(HorizontalAlignment.LEFT, VerticalAlignment.TOP);
         leftColumn.positioning(Positioning.absolute(10, 50));
         leftColumn.child(rotationSliders);
 
         // --- Advanced Mode button ---
-        FlowLayout advWrap = Containers.horizontalFlow(Sizing.content(), Sizing.content());
+        FlowLayout advWrap = UIContainers.horizontalFlow(Sizing.content(), Sizing.content());
         advWrap.positioning(Positioning.absolute(10, 10));
         advWrap.gap(5);
        // advWrap.child(advancedModeButton);
@@ -192,16 +191,16 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
 
 
 
-        FlowLayout newEntityWrapper = Containers.verticalFlow(Sizing.content(), Sizing.content());
+        FlowLayout newEntityWrapper = UIContainers.verticalFlow(Sizing.content(), Sizing.content());
         newEntityWrapper.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
 
         newEntityWrapper.child(
-                Components.button(net.minecraft.network.chat.Component.literal("New Block Display Entity"), press -> newBlockdisplayEntity())
+                UIComponents.button(net.minecraft.network.chat.Component.literal("New Block Display Entity"), press -> newBlockdisplayEntity())
                         .horizontalSizing(Sizing.fixed(130))
         );
 
         newEntityWrapper.child(
-                Components.button(net.minecraft.network.chat.Component.literal("New Item Display Entity"), press -> newItemdisplayEntity())
+                UIComponents.button(net.minecraft.network.chat.Component.literal("New Item Display Entity"), press -> newItemdisplayEntity())
                         .horizontalSizing(Sizing.fixed(130))
         );
 
@@ -211,12 +210,12 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
 
 
         newEntityWrapper.child(
-                Components.button(net.minecraft.network.chat.Component.literal("Remove Display Entity"), press -> removeDisplayEntity())
+                UIComponents.button(net.minecraft.network.chat.Component.literal("Remove Display Entity"), press -> removeDisplayEntity())
                         .horizontalSizing(Sizing.fixed(130))
         );
 
         newEntityWrapper.child(
-                Components.button(net.minecraft.network.chat.Component.literal("Duplicate Display Entity"), press -> duplicateDisplayEntity())
+                UIComponents.button(net.minecraft.network.chat.Component.literal("Duplicate Display Entity"), press -> duplicateDisplayEntity())
                         .horizontalSizing(Sizing.fixed(130))
         );
 
@@ -229,15 +228,15 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
 
 
 
-        FlowLayout posWrapper = Containers.verticalFlow(Sizing.content(), Sizing.content());
+        FlowLayout posWrapper = UIContainers.verticalFlow(Sizing.content(), Sizing.content());
         posWrapper.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
 
 
-        FlowLayout applyRow = Containers.horizontalFlow(Sizing.fixed(200), Sizing.content());
+        FlowLayout applyRow = UIContainers.horizontalFlow(Sizing.fixed(200), Sizing.content());
         applyRow.alignment(HorizontalAlignment.RIGHT, VerticalAlignment.CENTER);
 
         applyRow.child(
-                Components.button(net.minecraft.network.chat.Component.literal("Apply Position"), btn -> {
+                UIComponents.button(net.minecraft.network.chat.Component.literal("Apply Position"), btn -> {
                     if (displayEntity != null) {
                         try {
                             double newX = Double.parseDouble(positionXbox.getValue());
@@ -255,21 +254,21 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
 
         // X row
         // X row
-        FlowLayout xRow = Containers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
+        FlowLayout xRow = UIContainers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
         xRow.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
-        xRow.child(Components.label(net.minecraft.network.chat.Component.literal("Position X")).horizontalSizing(Sizing.fixed(70)));
+        xRow.child(UIComponents.label(net.minecraft.network.chat.Component.literal("Position X")).horizontalSizing(Sizing.fixed(70)));
         positionXbox.setMaxLength(12);
         positionXbox.setFilter(s -> s.matches("-?\\d*(\\.\\d+)?"));
         xRow.child(positionXbox);
 // -1 / +1 buttons
-        xRow.child(Components.button(net.minecraft.network.chat.Component.literal("-1"), btn -> {
+        xRow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("-1"), btn -> {
             if (displayEntity != null) {
                 double newX = displayEntity.getX() - 1;
                 sendPositionUpdate(newX, displayEntity.getY(), displayEntity.getZ());
                 positionXbox.setValue(String.valueOf(newX));
             }
         }).horizontalSizing(Sizing.fixed(30)));
-        xRow.child(Components.button(net.minecraft.network.chat.Component.literal("+1"), btn -> {
+        xRow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("+1"), btn -> {
             if (displayEntity != null) {
                 double newX = displayEntity.getX() + 1;
                 sendPositionUpdate(newX, displayEntity.getY(), displayEntity.getZ());
@@ -279,21 +278,21 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
         posWrapper.child(xRow);
 
         // Y row
-        FlowLayout yRow = Containers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
+        FlowLayout yRow = UIContainers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
         yRow.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
-        yRow.child(Components.label(net.minecraft.network.chat.Component.literal("Position Y")).horizontalSizing(Sizing.fixed(70)));
+        yRow.child(UIComponents.label(net.minecraft.network.chat.Component.literal("Position Y")).horizontalSizing(Sizing.fixed(70)));
         positionYbox.setMaxLength(12);
         positionYbox.setFilter(s -> s.matches("-?\\d*(\\.\\d+)?"));
         yRow.child(positionYbox);
 // -1 / +1 buttons
-        yRow.child(Components.button(net.minecraft.network.chat.Component.literal("-1"), btn -> {
+        yRow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("-1"), btn -> {
             if (displayEntity != null) {
                 double newY = displayEntity.getY() - 1;
                 sendPositionUpdate( displayEntity.getX(), newY, displayEntity.getZ());
                 positionYbox.setValue(String.valueOf(newY));
             }
         }).horizontalSizing(Sizing.fixed(30)));
-        yRow.child(Components.button(net.minecraft.network.chat.Component.literal("+1"), btn -> {
+        yRow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("+1"), btn -> {
             if (displayEntity != null) {
                 double newY = displayEntity.getY() + 1;
                 sendPositionUpdate( displayEntity.getX(), newY, displayEntity.getZ());
@@ -302,21 +301,21 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
         }).horizontalSizing(Sizing.fixed(30)));
         posWrapper.child(yRow);
 
-        FlowLayout zRow = Containers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
+        FlowLayout zRow = UIContainers.horizontalFlow(Sizing.content(), Sizing.fixed(24));
         zRow.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
-        zRow.child(Components.label(net.minecraft.network.chat.Component.literal("Position Z")).horizontalSizing(Sizing.fixed(70)));
+        zRow.child(UIComponents.label(net.minecraft.network.chat.Component.literal("Position Z")).horizontalSizing(Sizing.fixed(70)));
         positionZbox.setMaxLength(12);
         positionZbox.setFilter(s -> s.matches("-?\\d*(\\.\\d+)?"));
         zRow.child(positionZbox);
 // -1 / +1 buttons
-        zRow.child(Components.button(net.minecraft.network.chat.Component.literal("-1"), btn -> {
+        zRow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("-1"), btn -> {
             if (displayEntity != null) {
                 double newZ = displayEntity.getZ() - 1;
                 sendPositionUpdate( displayEntity.getX(), displayEntity.getY(),  newZ);
                 positionZbox.setValue(String.valueOf(newZ));
             }
         }).horizontalSizing(Sizing.fixed(30)));
-        zRow.child(Components.button(net.minecraft.network.chat.Component.literal("+1"), btn -> {
+        zRow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("+1"), btn -> {
             if (displayEntity != null) {
                 double newZ = displayEntity.getZ() + 1;
                 sendPositionUpdate( displayEntity.getX(),  displayEntity.getY(),  newZ);
@@ -356,12 +355,12 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
         });
          */
 
-        blockStateFlow = Containers.verticalFlow(Sizing.content(), Sizing.content());// optional spacing
+        blockStateFlow = UIContainers.verticalFlow(Sizing.content(), Sizing.content());// optional spacing
 
 
 
 
-        blockStateScroll = Containers.verticalScroll(
+        blockStateScroll = UIContainers.verticalScroll(
                         Sizing.fixed(220), // width of scroll area
                         Sizing.fixed(130), // height of scroll area
                         blockStateFlow
@@ -394,12 +393,12 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
 
 
 
-        FlowLayout dropdownWrapper = Containers.verticalFlow(Sizing.content(), Sizing.content());
+        FlowLayout dropdownWrapper = UIContainers.verticalFlow(Sizing.content(), Sizing.content());
         dropdownWrapper.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
 
-        dropdownWrapper.child(Components.button(net.minecraft.network.chat.Component.literal("Align X"), press -> alignCoord("x")).horizontalSizing(Sizing.fixed(80)));
-        dropdownWrapper.child(Components.button(net.minecraft.network.chat.Component.literal("Align Y"), press -> alignCoord("y")).horizontalSizing(Sizing.fixed(80)));
-        dropdownWrapper.child(Components.button(net.minecraft.network.chat.Component.literal("Align Z"), press -> alignCoord("z")).horizontalSizing(Sizing.fixed(80)));
+        dropdownWrapper.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Align X"), press -> alignCoord("x")).horizontalSizing(Sizing.fixed(80)));
+        dropdownWrapper.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Align Y"), press -> alignCoord("y")).horizontalSizing(Sizing.fixed(80)));
+        dropdownWrapper.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Align Z"), press -> alignCoord("z")).horizontalSizing(Sizing.fixed(80)));
 
         dropdownWrapper.positioning(Positioning.absolute(this.width - 125 - 10, 150));
 
@@ -416,7 +415,7 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
 
 
 
-        FlowLayout axisControls = Containers.horizontalFlow(Sizing.content(), Sizing.content());
+        FlowLayout axisControls = UIContainers.horizontalFlow(Sizing.content(), Sizing.content());
         axisControls.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
 
 
@@ -724,43 +723,43 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
 
 
             if (state.is(Blocks.PISTON)) {
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Set Piston Head"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "pistonhead"))).horizontalSizing(Sizing.fixed(188)));
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Make Sticky"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "makesticky"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Set Piston Head"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "pistonhead"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Make Sticky"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "makesticky"))).horizontalSizing(Sizing.fixed(188)));
             }
 
             if (state.is(Blocks.PISTON_HEAD)) {
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Set Piston"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "piston"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Set Piston"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "piston"))).horizontalSizing(Sizing.fixed(188)));
             }
 
             if (state.is(Blocks.STICKY_PISTON)) {
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Set Non Sticky"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "nonsticky"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Set Non Sticky"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "nonsticky"))).horizontalSizing(Sizing.fixed(188)));
             }
 
 
 
             if (state.is(Blocks.DIRT)) {
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Set Farmland"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "farmland"))).horizontalSizing(Sizing.fixed(188)));
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Set Grass"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "grass"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Set Farmland"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "farmland"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Set Grass"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "grass"))).horizontalSizing(Sizing.fixed(188)));
             }
             if (state.is(Blocks.FARMLAND)) {
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Set Dirt"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "dirt"))).horizontalSizing(Sizing.fixed(188)));
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Set Grass"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "grass"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Set Dirt"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "dirt"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Set Grass"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "grass"))).horizontalSizing(Sizing.fixed(188)));
 
             }
             if (state.is(Blocks.GRASS_BLOCK)) {
 
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Set Farmland"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "farmland"))).horizontalSizing(Sizing.fixed(188)));
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Set Dirt"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "dirt"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Set Farmland"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "farmland"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Set Dirt"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "dirt"))).horizontalSizing(Sizing.fixed(188)));
             }
             if (state.is(Blocks.BAMBOO)) {
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Set Bamboo Shoot"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "bambooshoot"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Set Bamboo Shoot"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "bambooshoot"))).horizontalSizing(Sizing.fixed(188)));
             }
             if (state.is(Blocks.BAMBOO_SAPLING)) {
-                blockStateFlow.child(Components.button(net.minecraft.network.chat.Component.literal("Set Bamboo"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "bambooshoot"))).horizontalSizing(Sizing.fixed(188)));
+                blockStateFlow.child(UIComponents.button(net.minecraft.network.chat.Component.literal("Set Bamboo"), btn -> ClientPlayNetworking.send(new ChangeBlockDisplayState(displayEntity.getStringUUID(), "bambooshoot"))).horizontalSizing(Sizing.fixed(188)));
 
             }
             for (Property<?> property : state.getProperties()) {
-                blockStateFlow.child(Components.button(
+                blockStateFlow.child(UIComponents.button(
                         net.minecraft.network.chat.Component.literal(property.getName() + " = " + state.getValue(property)),
                         btn -> handleBlockStateClick(property, blockDisplayEntity.getBlockState()) // always fresh state
                 ).horizontalSizing(Sizing.fixed(188)));
@@ -774,7 +773,7 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
             blockStateFlow.clearChildren();
 
 
-            blockStateFlow.child(Components.button(
+            blockStateFlow.child(UIComponents.button(
                     net.minecraft.network.chat.Component.literal("Display = " + getName(currentContext)),
                     btn -> {
                         // cycle to next
@@ -809,9 +808,9 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
 
 
             Transformation transformation = Display.createTransformation(displayEntity.getEntityData());
-            Quaternionf rightRot = transformation.getRightRotation();
-            Vector3f scale = transformation.getScale();
-            Vector3f translation = transformation.getTranslation();
+            Quaternionf rightRot = new Quaternionf(transformation.rightRotation());
+            Vector3f scale = new Vector3f(transformation.scale());
+            Vector3f translation = new Vector3f(transformation.translation());
             float[] eulers = quaternionToEulerDegrees(rightRot);
 
             suppressUpdates = true;
@@ -867,8 +866,4 @@ public class BlockDisplayEntityEditScreen extends BaseOwoScreen<FlowLayout> {
         return false;
     }
 
-    @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
-        super.render(context, mouseX, mouseY, deltaTicks);
-    }
 }
