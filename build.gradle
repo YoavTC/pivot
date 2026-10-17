@@ -10,13 +10,6 @@ base {
 	archivesName = project.archives_base_name
 }
 
-repositories {
-	maven { url 'https://maven.wispforest.io' }
-	maven {
-		url 'https://jitpack.io'
-		content { includeGroup 'com.github.kdl-org' }
-	}
-}
 
 loom {
 	splitEnvironmentSourceSets()
@@ -41,14 +34,6 @@ dependencies {
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
 
-	implementation "io.wispforest:owo-lib:${project.owo_version}"
-	// only if you plan to use owo-config
-
-
-	// include this if you don't want force your users to install owo
-	// sentinel will warn them and give the option to download it automatically
-	include "io.wispforest:owo-sentinel:${project.owo_version}"
-	
 }
 
 processResources {
