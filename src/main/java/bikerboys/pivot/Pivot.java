@@ -12,7 +12,7 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,21 +22,21 @@ public class Pivot implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	public static final AttachmentType<UUIDCustomAttachedData> UUID_ATTACHMENT = AttachmentRegistry.create(
-					Identifier.of(MOD_ID,"uuid"),
+					ResourceLocation.fromNamespaceAndPath(MOD_ID,"uuid"),
 					builder->builder // we are using a builder chain here to configure the attachment data type
 							.initializer(()->UUIDCustomAttachedData.DEFAULT) // a default value to provide if you dont supply one
 							.persistent(UUIDCustomAttachedData.CODEC)
 							.syncWith(UUIDCustomAttachedData.PACKET_CODEC, AttachmentSyncPredicate.all()));
 
 	public static final AttachmentType<LockedCustomAttachedData> LOCKED_ATTACHMENT = AttachmentRegistry.create(
-			Identifier.of(MOD_ID,"locked"),
+			ResourceLocation.fromNamespaceAndPath(MOD_ID,"locked"),
 			builder->builder // we are using a builder chain here to configure the attachment data type
 					.initializer(()->LockedCustomAttachedData.DEFAULT) // a default value to provide if you dont supply one
 					.persistent(LockedCustomAttachedData.CODEC)
 					.syncWith(LockedCustomAttachedData.PACKET_CODEC, AttachmentSyncPredicate.all()));
 
 	public static final AttachmentType<OriginalBlockAttachedData> ORIGINAL_BLOCK_ATTACHMENT = AttachmentRegistry.create(
-			Identifier.of(MOD_ID,"originalblock"),
+			ResourceLocation.fromNamespaceAndPath(MOD_ID,"originalblock"),
 			builder->builder // we are using a builder chain here to configure the attachment data type
 					.initializer(()->OriginalBlockAttachedData.DEFAULT) // a default value to provide if you dont supply one
 					.persistent(OriginalBlockAttachedData.CODEC)
