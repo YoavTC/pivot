@@ -10,7 +10,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -25,16 +24,13 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static bikerboys.pivot.util.Util.eulerDegreesToQuaternion;
 import static bikerboys.pivot.util.Util.quaternionToEulerDegrees;
 
 public class BlockDisplayEntityEditScreen extends Screen {
-	private static final String NUMBER_PATTERN = "-?\\d*\\.?\\d*";
 	private static final int LABEL_X = 10;
 	private static final int CONTROL_X = 80;
 	private static final int ENTRY_HEIGHT = 22;
@@ -57,8 +53,6 @@ public class BlockDisplayEntityEditScreen extends Screen {
 	private final List<Label> labels = new ArrayList<>();
 	private final List<ValueSlider> sliders = new ArrayList<>();
 	private final List<Button> stateButtons = new ArrayList<>();
-	private final Map<EditBox, String> lastValidText = new HashMap<>();
-	private final EditBox[] positionBoxes = new EditBox[3];
 
 	private ValueSlider rotXSlider;
 	private ValueSlider rotYSlider;
@@ -100,25 +94,6 @@ public class BlockDisplayEntityEditScreen extends Screen {
 		return slider;
 	}
 
-	private EditBox positionRow(String label, int axis, int y) {
-		labels.add(new Label(label, LABEL_X, y + 6));
-
-		EditBox box = addRenderableWidget(new EditBox(font, CONTROL_X, y, 140, 20, Component.literal(label)));
-		box.setMaxLength(12);
-		box.setResponder(text -> {
-			if (text.matches(NUMBER_PATTERN)) {
-				lastValidText.put(box, text);
-			} else if (!text.equals(lastValidText.get(box))) {
-				box.setValue(lastValidText.getOrDefault(box, ""));
-			}
-		});
-
-		button("-1", CONTROL_X + 142, y, 30, press -> shiftPosition(axis, -1));
-		button("+1", CONTROL_X + 174, y, 30, press -> shiftPosition(axis, 1));
-		positionBoxes[axis] = box;
-		return box;
-	}
-
 	private void offsetRow(String label, int axis, int y) {
 		labels.add(new Label(label, LABEL_X, y + 6));
 
@@ -144,7 +119,6 @@ public class BlockDisplayEntityEditScreen extends Screen {
 		labels.clear();
 		sliders.clear();
 		stateButtons.clear();
-		lastValidText.clear();
 		stateSignature = "";
 		stateEntityUuid = "";
 		listScroll = 0;
@@ -178,12 +152,6 @@ public class BlockDisplayEntityEditScreen extends Screen {
 		offsetRow("Offset Y", 1, y);
 		y += rowHeight;
 		offsetRow("Offset Z", 2, y);
-		y += rowHeight + 4;
-
-		button("Apply Position", CONTROL_X + 1, y, 129, press -> applyPosition());
-		positionRow("Position X", 0, y + rowHeight);
-		positionRow("Position Y", 1, y + rowHeight * 2);
-		positionRow("Position Z", 2, y + rowHeight * 3);
 
 		int rightX = width - 135;
 		int alignY = compact ? 80 : 150;
@@ -411,36 +379,16 @@ public class BlockDisplayEntityEditScreen extends Screen {
 		ClientPlayNetworking.send(new UpdateBlockDisplayPos(displayEntity.getStringUUID(), new Vec3(x, y, z)));
 	}
 
-	private void applyPosition() {
-		if (displayEntity == null) return;
-
-		try {
-			double newX = Double.parseDouble(positionBoxes[0].getValue());
-			double newY = Double.parseDouble(positionBoxes[1].getValue());
-			double newZ = Double.parseDouble(positionBoxes[2].getValue());
-			sendPositionUpdate(newX, newY, newZ);
-		} catch (NumberFormatException ignored) {}
-	}
-
 	private void shiftPosition(int axis, double delta) {
 		if (displayEntity == null) return;
 
 		double[] position = {displayEntity.getX(), displayEntity.getY(), displayEntity.getZ()};
 		position[axis] += delta;
 		sendPositionUpdate(position[0], position[1], position[2]);
-		positionBoxes[axis].setValue(String.valueOf(position[axis]));
-	}
-
-	private void loadPositionBoxes() {
-		positionBoxes[0].setValue(String.valueOf((float) displayEntity.getX()));
-		positionBoxes[1].setValue(String.valueOf((float) displayEntity.getY()));
-		positionBoxes[2].setValue(String.valueOf((float) displayEntity.getZ()));
 	}
 
 	private void alignCoord(String coord) {
 		if (displayEntity == null) return;
-
-		loadPositionBoxes();
 
 		AlignXYZ alignXYZ = new AlignXYZ(displayEntity.getStringUUID(), coord);
 
@@ -556,8 +504,6 @@ public class BlockDisplayEntityEditScreen extends Screen {
 			scaleXSlider.setRealValue(scale.x, false);
 			scaleYSlider.setRealValue(scale.y, false);
 			scaleZSlider.setRealValue(scale.z, false);
-
-			loadPositionBoxes();
 		}
 		tick++;
 	}
