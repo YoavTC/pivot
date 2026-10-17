@@ -10,7 +10,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -25,23 +24,22 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static bikerboys.pivot.util.Util.eulerDegreesToQuaternion;
 import static bikerboys.pivot.util.Util.quaternionToEulerDegrees;
 
 public class BlockDisplayEntityEditScreen extends Screen {
-	private static final String NUMBER_PATTERN = "-?\\d*\\.?\\d*";
 	private static final int LABEL_X = 10;
 	private static final int CONTROL_X = 80;
-	private static final int ROW_HEIGHT = 24;
 	private static final int ENTRY_HEIGHT = 22;
 	private static final int ENTRY_WIDTH = 188;
 	private static final int LIST_WIDTH = 220;
-	private static final int LIST_HEIGHT = 130;
+	private static final int MAX_LIST_HEIGHT = 130;
+	private static final int MIN_LIST_HEIGHT = 44;
+	private static final int OFFSET_BUTTON_WIDTH = 34;
+	private static final double[] OFFSET_STEPS = {0.5, 0.25, 0.1, 0.05};
 	private static final int LIST_PADDING = 5;
 
 	private record Label(String text, int x, int y) {}
@@ -55,8 +53,6 @@ public class BlockDisplayEntityEditScreen extends Screen {
 	private final List<Label> labels = new ArrayList<>();
 	private final List<ValueSlider> sliders = new ArrayList<>();
 	private final List<Button> stateButtons = new ArrayList<>();
-	private final Map<EditBox, String> lastValidText = new HashMap<>();
-	private final EditBox[] positionBoxes = new EditBox[3];
 
 	private ValueSlider rotXSlider;
 	private ValueSlider rotYSlider;
@@ -64,13 +60,12 @@ public class BlockDisplayEntityEditScreen extends Screen {
 	private ValueSlider scaleXSlider;
 	private ValueSlider scaleYSlider;
 	private ValueSlider scaleZSlider;
-	private ValueSlider transXSlider;
-	private ValueSlider transYSlider;
-	private ValueSlider transZSlider;
 	private Button lockButton;
 
+	private int rowHeight = 24;
 	private int listX;
 	private int listY;
+	private int listHeight = MAX_LIST_HEIGHT;
 	private int listScroll;
 	private int listMaxScroll;
 	private String stateSignature = "";
@@ -99,23 +94,24 @@ public class BlockDisplayEntityEditScreen extends Screen {
 		return slider;
 	}
 
-	private EditBox positionRow(String label, int axis, int y) {
+	private void offsetRow(String label, int axis, int y) {
 		labels.add(new Label(label, LABEL_X, y + 6));
 
-		EditBox box = addRenderableWidget(new EditBox(font, CONTROL_X, y, 140, 20, Component.literal(label)));
-		box.setMaxLength(12);
-		box.setResponder(text -> {
-			if (text.matches(NUMBER_PATTERN)) {
-				lastValidText.put(box, text);
-			} else if (!text.equals(lastValidText.get(box))) {
-				box.setValue(lastValidText.getOrDefault(box, ""));
-			}
-		});
+		int x = CONTROL_X;
+		for (int i = 0; i < OFFSET_STEPS.length; i++) {
+			double step = OFFSET_STEPS[i];
+			button("-" + formatStep(step), x, y, OFFSET_BUTTON_WIDTH, press -> shiftPosition(axis, -step));
+			x += OFFSET_BUTTON_WIDTH + 2;
+		}
+		for (int i = OFFSET_STEPS.length - 1; i >= 0; i--) {
+			double step = OFFSET_STEPS[i];
+			button("+" + formatStep(step), x, y, OFFSET_BUTTON_WIDTH, press -> shiftPosition(axis, step));
+			x += OFFSET_BUTTON_WIDTH + 2;
+		}
+	}
 
-		button("-1", CONTROL_X + 142, y, 30, press -> shiftPosition(axis, -1));
-		button("+1", CONTROL_X + 174, y, 30, press -> shiftPosition(axis, 1));
-		positionBoxes[axis] = box;
-		return box;
+	private static String formatStep(double step) {
+		return String.valueOf(step);
 	}
 
 	@Override
@@ -123,11 +119,14 @@ public class BlockDisplayEntityEditScreen extends Screen {
 		labels.clear();
 		sliders.clear();
 		stateButtons.clear();
-		lastValidText.clear();
 		stateSignature = "";
 		stateEntityUuid = "";
 		listScroll = 0;
 		tick = 0;
+
+		boolean compact = height < 440;
+		rowHeight = compact ? 22 : 24;
+		int leftTop = compact ? 36 : 50;
 
 		button("Toggle Glowing", 10, 10, 100, press -> PivotClient.glowing = !PivotClient.glowing);
 
@@ -135,53 +134,50 @@ public class BlockDisplayEntityEditScreen extends Screen {
 		button("Previous", width - 125, 32, 110, press -> switchEntity(-1));
 		button("Closest", width - 125, 54, 110, press -> selectClosest());
 
-		int y = 50;
+		int y = leftTop;
 		rotXSlider = sliderRow("Rotation X", y, -180, 180, 0, "0", 45, "45", this::updateBlockRotationFromEuler);
-		y += ROW_HEIGHT;
+		y += rowHeight;
 		rotYSlider = sliderRow("Rotation Y", y, -180, 180, 0, "0", 45, "45", this::updateBlockRotationFromEuler);
-		y += ROW_HEIGHT;
+		y += rowHeight;
 		rotZSlider = sliderRow("Rotation Z", y, -180, 180, 0, "0", 45, "45", this::updateBlockRotationFromEuler);
-		y += ROW_HEIGHT;
+		y += rowHeight;
 		scaleXSlider = sliderRow("Scale X", y, 0, 10, 1, "1", 0.5, "0.5", this::updateScale);
-		y += ROW_HEIGHT;
+		y += rowHeight;
 		scaleYSlider = sliderRow("Scale Y", y, 0, 10, 1, "1", 0.5, "0.5", this::updateScale);
-		y += ROW_HEIGHT;
+		y += rowHeight;
 		scaleZSlider = sliderRow("Scale Z", y, 0, 10, 1, "1", 0.5, "0.5", this::updateScale);
-		y += ROW_HEIGHT;
-		transXSlider = sliderRow("Translation X", y, -2, 2, 0, "0", 0.05, "0.05", this::updateTransformation);
-		y += ROW_HEIGHT;
-		transYSlider = sliderRow("Translation Y", y, -2, 2, 0, "0", 0.05, "0.05", this::updateTransformation);
-		y += ROW_HEIGHT;
-		transZSlider = sliderRow("Translation Z", y, -2, 2, 0, "0", 0.05, "0.05", this::updateTransformation);
-
-		int positionY = Math.max(y + ROW_HEIGHT + 4, Math.min(385, height - 4 * ROW_HEIGHT - 8));
-		button("Apply Position", CONTROL_X + 1, positionY, 129, press -> applyPosition());
-		positionRow("Position X", 0, positionY + ROW_HEIGHT);
-		positionRow("Position Y", 1, positionY + ROW_HEIGHT * 2);
-		positionRow("Position Z", 2, positionY + ROW_HEIGHT * 3);
+		y += rowHeight;
+		offsetRow("Offset X", 0, y);
+		y += rowHeight;
+		offsetRow("Offset Y", 1, y);
+		y += rowHeight;
+		offsetRow("Offset Z", 2, y);
 
 		int rightX = width - 135;
-		button("Align X", rightX, 150, 80, press -> alignCoord("x"));
-		button("Align Y", rightX, 172, 80, press -> alignCoord("y"));
-		button("Align Z", rightX, 194, 80, press -> alignCoord("z"));
+		int alignY = compact ? 80 : 150;
+		button("Align X", rightX, alignY, 80, press -> alignCoord("x"));
+		button("Align Y", rightX, alignY + 22, 80, press -> alignCoord("y"));
+		button("Align Z", rightX, alignY + 44, 80, press -> alignCoord("z"));
 
-		button("New Block Display Entity", rightX, 225, 130, press -> newBlockdisplayEntity());
-		button("New Item Display Entity", rightX, 247, 130, press -> newItemdisplayEntity());
-		button("Remove Display Entity", rightX, 269, 130, press -> removeDisplayEntity());
-		button("Duplicate Display Entity", rightX, 291, 130, press -> duplicateDisplayEntity());
-		lockButton = button("Lock Display Entity", rightX, 313, 130, press -> toggleLockDisplayEntity());
+		int entityY = compact ? alignY + 3 * 22 + 6 : 225;
+		button("New Block Display Entity", rightX, entityY, 130, press -> newBlockdisplayEntity());
+		button("New Item Display Entity", rightX, entityY + 22, 130, press -> newItemdisplayEntity());
+		button("Remove Display Entity", rightX, entityY + 44, 130, press -> removeDisplayEntity());
+		button("Duplicate Display Entity", rightX, entityY + 66, 130, press -> duplicateDisplayEntity());
+		lockButton = button("Lock Display Entity", rightX, entityY + 88, 130, press -> toggleLockDisplayEntity());
 
 		listX = width - 225;
-		listY = Math.min(340, height - LIST_HEIGHT - 10);
+		listY = entityY + 5 * 22 + 5;
+		listHeight = Mth.clamp(height - listY - 6, MIN_LIST_HEIGHT, MAX_LIST_HEIGHT);
 	}
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-		graphics.fill(listX, listY, listX + LIST_WIDTH, listY + LIST_HEIGHT, 0xC0101010);
+		graphics.fill(listX, listY, listX + LIST_WIDTH, listY + listHeight, 0xC0101010);
 		graphics.fill(listX, listY, listX + LIST_WIDTH, listY + 1, 0xFF555555);
-		graphics.fill(listX, listY + LIST_HEIGHT - 1, listX + LIST_WIDTH, listY + LIST_HEIGHT, 0xFF555555);
-		graphics.fill(listX, listY, listX + 1, listY + LIST_HEIGHT, 0xFF555555);
-		graphics.fill(listX + LIST_WIDTH - 1, listY, listX + LIST_WIDTH, listY + LIST_HEIGHT, 0xFF555555);
+		graphics.fill(listX, listY + listHeight - 1, listX + LIST_WIDTH, listY + listHeight, 0xFF555555);
+		graphics.fill(listX, listY, listX + 1, listY + listHeight, 0xFF555555);
+		graphics.fill(listX + LIST_WIDTH - 1, listY, listX + LIST_WIDTH, listY + listHeight, 0xFF555555);
 
 		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
@@ -190,18 +186,18 @@ public class BlockDisplayEntityEditScreen extends Screen {
 		}
 
 		if (listMaxScroll > 0) {
-			int viewHeight = LIST_HEIGHT - LIST_PADDING * 2;
+			int viewHeight = listHeight - LIST_PADDING * 2;
 			int thumbHeight = Math.max(12, viewHeight * viewHeight / (viewHeight + listMaxScroll));
 			int thumbY = listY + LIST_PADDING + (viewHeight - thumbHeight) * listScroll / listMaxScroll;
 			int barX = listX + LIST_WIDTH - 8;
-			graphics.fill(barX, listY + LIST_PADDING, barX + 4, listY + LIST_HEIGHT - LIST_PADDING, 0xFF202020);
+			graphics.fill(barX, listY + LIST_PADDING, barX + 4, listY + listHeight - LIST_PADDING, 0xFF202020);
 			graphics.fill(barX, thumbY, barX + 4, thumbY + thumbHeight, 0xFFA0A0A0);
 		}
 	}
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		if (mouseX >= listX && mouseX < listX + LIST_WIDTH && mouseY >= listY && mouseY < listY + LIST_HEIGHT) {
+		if (mouseX >= listX && mouseX < listX + LIST_WIDTH && mouseY >= listY && mouseY < listY + listHeight) {
 			listScroll -= (int) (scrollY * 11);
 			layoutStateList();
 			return true;
@@ -219,7 +215,7 @@ public class BlockDisplayEntityEditScreen extends Screen {
 
 	private void layoutStateList() {
 		int viewTop = listY + LIST_PADDING;
-		int viewBottom = listY + LIST_HEIGHT - LIST_PADDING;
+		int viewBottom = listY + listHeight - LIST_PADDING;
 		listMaxScroll = Math.max(0, stateButtons.size() * ENTRY_HEIGHT - (viewBottom - viewTop));
 		listScroll = Mth.clamp(listScroll, 0, listMaxScroll);
 
@@ -383,36 +379,16 @@ public class BlockDisplayEntityEditScreen extends Screen {
 		ClientPlayNetworking.send(new UpdateBlockDisplayPos(displayEntity.getStringUUID(), new Vec3(x, y, z)));
 	}
 
-	private void applyPosition() {
-		if (displayEntity == null) return;
-
-		try {
-			double newX = Double.parseDouble(positionBoxes[0].getValue());
-			double newY = Double.parseDouble(positionBoxes[1].getValue());
-			double newZ = Double.parseDouble(positionBoxes[2].getValue());
-			sendPositionUpdate(newX, newY, newZ);
-		} catch (NumberFormatException ignored) {}
-	}
-
 	private void shiftPosition(int axis, double delta) {
 		if (displayEntity == null) return;
 
 		double[] position = {displayEntity.getX(), displayEntity.getY(), displayEntity.getZ()};
 		position[axis] += delta;
 		sendPositionUpdate(position[0], position[1], position[2]);
-		positionBoxes[axis].setValue(String.valueOf(position[axis]));
-	}
-
-	private void loadPositionBoxes() {
-		positionBoxes[0].setValue(String.valueOf((float) displayEntity.getX()));
-		positionBoxes[1].setValue(String.valueOf((float) displayEntity.getY()));
-		positionBoxes[2].setValue(String.valueOf((float) displayEntity.getZ()));
 	}
 
 	private void alignCoord(String coord) {
 		if (displayEntity == null) return;
-
-		loadPositionBoxes();
 
 		AlignXYZ alignXYZ = new AlignXYZ(displayEntity.getStringUUID(), coord);
 
@@ -428,16 +404,6 @@ public class BlockDisplayEntityEditScreen extends Screen {
 				(float) scaleXSlider.getRealValue(),
 				(float) scaleYSlider.getRealValue(),
 				(float) scaleZSlider.getRealValue()
-		));
-	}
-
-	private void updateTransformation() {
-		if (displayEntity == null) return;
-
-		sendTransUpdate(new Vector3f(
-				(float) transXSlider.getRealValue(),
-				(float) transYSlider.getRealValue(),
-				(float) transZSlider.getRealValue()
 		));
 	}
 
@@ -504,12 +470,6 @@ public class BlockDisplayEntityEditScreen extends Screen {
 		ClientPlayNetworking.send(new UpdateBlockDisplayPacketC2S(displayEntity.getUUID().toString(), null, null, q));
 	}
 
-	private void sendTransUpdate(Vector3f q) {
-		if (displayEntity == null) return;
-
-		ClientPlayNetworking.send(new UpdateBlockDisplayPacketC2S(displayEntity.getUUID().toString(), q, null, null));
-	}
-
 	@Override
 	public void tick() {
 		super.tick();
@@ -535,22 +495,15 @@ public class BlockDisplayEntityEditScreen extends Screen {
 			Transformation transformation = Display.createTransformation(displayEntity.getEntityData());
 			Quaternionf rightRot = new Quaternionf(transformation.rightRotation());
 			Vector3f scale = new Vector3f(transformation.scale());
-			Vector3f translation = new Vector3f(transformation.translation());
 			float[] eulers = quaternionToEulerDegrees(rightRot);
 
 			rotXSlider.setRealValue(eulers[0], false);
 			rotYSlider.setRealValue(eulers[1], false);
 			rotZSlider.setRealValue(eulers[2], false);
 
-			transXSlider.setRealValue(translation.x, false);
-			transYSlider.setRealValue(translation.y, false);
-			transZSlider.setRealValue(translation.z, false);
-
 			scaleXSlider.setRealValue(scale.x, false);
 			scaleYSlider.setRealValue(scale.y, false);
 			scaleZSlider.setRealValue(scale.z, false);
-
-			loadPositionBoxes();
 		}
 		tick++;
 	}
